@@ -1,10 +1,11 @@
 const Tour = require('../../models/tour.model');
+const APIFilters = require('./../../utilities/apiFilters');
 
 // const checkId = (req, res, next, val) => {
 //   console.log(`${val}`);
 //   next();
 // };
-
+//middlware
 const checkBody = (req, res, next) => {
   const body = req.body;
   if (!body) {
@@ -13,49 +14,23 @@ const checkBody = (req, res, next) => {
   next();
 };
 
+const topTours = (req, res, next) => {
+  req.query.limit = 5;
+  (req.query.sort = '-ratingsAverage, price'),
+    (req.query.fields = 'name, price, ratingsAverage, summary, difficulty');
+  next();
+};
+
+//req handler
 const getAllTours = async (req, res) => {
   try {
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((el) => delete queryObj[el]);
+    const apiFilters = new APIFilters(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
 
-    //filtering with mongodb operators
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    // { query: "...", duration: { $gte: 5} => greater or equals than 5}
-    //  ?duration[gte]=5          --- gte, gt, lte, lt
-
-    let query = Tour.find(JSON.parse(queryStr), { __v: 0 });
-
-    //sorting
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createAt');
-    }
-    //sort('price name') --> if 2 have same price, will sort by name.
-    //&sort=-price --> descending order
-
-    //limit return data fields
-    if (req.query.fields) {
-      const selectFields = req.query.fields.split(',').join(' ');
-      query = query.select(selectFields);
-    }
-
-    //pagination
-    if (req.query.page) {
-      const page = req.query.page * 1 || 1;
-      const limit = req.query.limit * 1 || 10;
-      let skip = (page - 1) * limit;
-
-      const numTours = await Tour.countDocuments();
-      skip = skip > numTours ? numTours - limit : skip;
-
-      query = query.skip(skip).limit(limit);
-    }
-
-    const result = await query;
+    const result = await apiFilters.mongoQuery;
 
     res.status(200).json({
       status: 'ok',
@@ -129,11 +104,89 @@ const deleteTour = async (req, res) => {
   }
 };
 
+//PIPELINE
+const getToursStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingAverage: { $gte: 4.5 } },
+      },
+      {
+        $group: {
+          _id: '$difficulty', //set null to get all tours, no filter
+          numTours: { $sum: 1 }, //add 1 to counter with each document go through pipeline
+          numRatings: { $sum: '$ratingQuantity' },
+          averageRating: { $avg: '$ratingAverage' },
+          averagePrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' },
+        },
+      },
+      {
+        $sort: { averagePrice: 1 }, //sort by averagePrice
+      },
+      //{$match: {_id: {$ne: 'easy'}}} //exclude 'easy' docs
+    ]);
+    res.status(200).json({
+      status: 'success',
+      data: stats,
+    });
+  } catch (error) {
+    res.status(404).json({ msg: error });
+  }
+};
+
+const getMonthlyTours = async (req, res) => {
+  try {
+    const year = req.params.year * 1;
+    const freq = await Tour.aggregate([
+      {
+        $unwind: '$startDates',
+        //deconstruct array fields, output each doc for each element in array
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`), //within a given year
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTours: { $sum: 1 },
+          tours: { $push: '$name' },
+        },
+      },
+      {
+        $addFields: { month: '$_id' },
+      },
+      {
+        $project: { _id: 0 }, //remove _id from result
+      },
+      {
+        $sort: { numTours: -1 },
+      },
+      //{$limit: 6},
+    ]);
+    res.status(200).json({
+      status: 'success',
+      data: freq,
+    });
+  } catch (error) {
+    res.status(404).json({ msg: error });
+  }
+};
+
 module.exports = {
+  topTours,
   getAllTours,
   getTourById,
   createTour,
   updateTour,
   deleteTour,
   checkBody,
+  getToursStats,
+  getMonthlyTours,
 };
