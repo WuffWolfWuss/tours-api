@@ -6,12 +6,16 @@ dotenv.config();
 
 const mongoURL = process.env.MONGO_URL;
 
+if (process.env.NODE_ENV && process.env.NODE_ENV !== 'development') {
+  console.log(process.env.NODE_ENV);
+}
+
 mongoose.connection.once('open', () => {
   console.log('Connection ready.');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error(err);
+  console.error('Connect to DB failed. Check and try again.');
 });
 
 const startServer = async () => {
