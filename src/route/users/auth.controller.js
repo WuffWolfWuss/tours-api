@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
 const User = require('./../../models/user.model');
 const catchAsync = require('./../../utilities/catchAsync');
 const appError = require('./../../utilities/errors');
@@ -15,6 +16,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    passwordChangedAt: req.body.passwordChangedAt || null,
+    role: req.body.role,
   });
 
   const token = signToken(newUser._id);
@@ -50,3 +53,43 @@ exports.login = catchAsync(async (req, res, next) => {
     token,
   });
 });
+
+exports.protect = catchAsync(async (req, res, next) => {
+  let token;
+  //check token
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return next(new appError('You must login to view this url', 401));
+  }
+
+  //validate toke
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_KEY);
+
+  //check user exist
+  const existUser = await User.findById(decoded.id);
+  if (!existUser)
+    next(new appError('User belonging to this token no longer exist!'));
+
+  //check user changed password after JWT token was create
+  if (existUser.passwordHasChanged(decoded.iat)) {
+    return next(new appError('User password changed! Please login again', 401));
+  }
+  req.user = existUser;
+  next();
+});
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    //roles ['admin', 'guide']
+    if (!roles.includes(req.user.role)) {
+      return next(new appError('You do not have permission to do this', 403));
+    }
+    next();
+  };
+};
