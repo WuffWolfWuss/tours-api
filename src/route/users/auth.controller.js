@@ -8,6 +8,18 @@ const crypto = require('crypto');
 
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
+  const cookiesOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIES_EXPRIES * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === 'production') cookiesOptions.secure = true;
+
+  user.password = undefined; //hide password in response output
+
+  res.cookie('jwt', token, cookiesOptions);
+
   res.status(statusCode).json({
     status: 'success',
     token,
@@ -29,7 +41,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    passwordChangedAt: req.body.passwordChangedAt || null,
+    passwordChangedAt: req.body.passwordChangedAt || undefined,
     role: req.body.role,
   });
 

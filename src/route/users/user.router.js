@@ -6,9 +6,9 @@ const userRouter = express.Router();
 const authController = require('./auth.controller');
 
 const {
+  getMe,
   getAllUser,
   getUserById,
-  createUser,
   updateUser,
   deleteUser,
   updateMe,
@@ -20,16 +20,20 @@ userRouter.post('/login', authController.login);
 
 userRouter.post('/forgotPassword', authController.forgotPassword);
 userRouter.patch('/resetPassword/:token', authController.resetPassword);
-userRouter.patch(
-  '/updateMyPassword',
-  authController.protect,
-  authController.updatePassword
-);
 
-userRouter.patch('/updateMe', authController.protect, updateMe);
-userRouter.delete('/deleteMe', authController.protect, deleteMe);
+//Authenticate require
+userRouter.use(authController.protect);
 
-userRouter.route('/').get(getAllUser).post(createUser);
+userRouter.patch('/updateMyPassword', authController.updatePassword);
+
+userRouter.get('/me', getMe, getUserById);
+userRouter.patch('/updateMe', updateMe);
+userRouter.delete('/deleteMe', deleteMe);
+
+//only admin allow to access below route
+userRouter.use(authController.restrictTo('admin'));
+
+userRouter.route('/').get(getAllUser);
 
 userRouter.route('/:id').get(getUserById).patch(updateUser).delete(deleteUser);
 

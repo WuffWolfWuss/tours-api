@@ -31,13 +31,12 @@ const userSchema = mongoose.Schema({
     type: String,
     required: [true, 'password required'],
     trim: true,
-    maxlength: [30, 'password must not above 30 characters'],
     minlength: [6, 'password must not less than 6 characters.'],
     select: false,
   },
   passwordConfirm: {
     type: String,
-    required: [true, 'confirm your password'],
+    //required: [true, 'confirm your password'],
     //only work on save/create user
     validate: {
       validator: function (el) {

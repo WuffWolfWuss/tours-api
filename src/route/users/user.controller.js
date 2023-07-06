@@ -1,6 +1,7 @@
 const User = require('../../models/user.model');
 const appError = require('./../../utilities/errors');
 const catchAsync = require('./../../utilities/catchAsync');
+const factory = require('./../controller.factory');
 
 const filterObj = (obj, ...allowFields) => {
   const newObj = {};
@@ -10,17 +11,10 @@ const filterObj = (obj, ...allowFields) => {
   return newObj;
 };
 
-const getAllUser = catchAsync(async (req, res) => {
-  const result = await User.find();
-
-  res.status(200).json({
-    status: 'ok',
-    result: result.length,
-    data: {
-      result,
-    },
-  });
-});
+const getMe = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
 
 const updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
@@ -47,28 +41,20 @@ const deleteMe = catchAsync(async (req, res, next) => {
   res.status(204).json({ status: 'success' });
 });
 
-const getUserById = (req, res) => {
-  return res.status(500).json({ err: 'Route not implement' });
-};
+const getAllUser = factory.getAll(User);
+const getUserById = factory.getOne(User);
 
-const createUser = (req, res) => {
-  return res.status(500).json({ err: 'Route not implement' });
-};
+//avoid changing password using this
+const updateUser = factory.updateOne(User);
 
-const updateUser = (req, res) => {
-  return res.status(500).json({ err: 'Route not implement' });
-};
-
-const deleteUser = (req, res) => {
-  return res.status(500).json({ err: 'Route not implement' });
-};
+const deleteUser = factory.deleteOne(User);
 
 module.exports = {
+  getMe,
   updateMe,
   deleteMe,
   getAllUser,
   getUserById,
-  createUser,
   updateUser,
   deleteUser,
 };
