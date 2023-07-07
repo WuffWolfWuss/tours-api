@@ -1,5 +1,5 @@
 # tours-api
-<h4 align="center">An tour booking backend api using <a href="https://nodejs.org/en/" target="_blank">NodeJS</a>.</h4>
+<h4 align="center">An tours backend api using <a href="https://nodejs.org/en/" target="_blank">NodeJS</a>.</h4>
 
 ## Project architecture
 ![Architecture](https://github.com/WuffWolfWuss/tours-api/blob/main/dev-data/data/tour-architecture.jpg)
