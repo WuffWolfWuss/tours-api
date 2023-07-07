@@ -1,5 +1,5 @@
 {
-  "name": "natourst",
+  "name": "tours",
   "version": "1.0.0",
   "description": "node,express,mongo",
   "main": "app.js",
