@@ -10,6 +10,7 @@ const errorHandler = require('./src/utilities/errorController');
 const toursRouter = require('./src/route/tours/tour.router');
 const userRouter = require('./src/route/users/user.router');
 const reviewRouter = require('./src/route/reviews/reviews.router');
+const bookingRouter = require('./src/route/booking/booking.router');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(express.static(`${__dirname}/public`));
 app.use('/v1/tours', toursRouter);
 app.use('/v1/users', userRouter);
 app.use('/v1/reviews', reviewRouter);
+app.use('/v1/booking', bookingRouter);
 
 //Route not found handle
 app.all('*', (req, res, next) => {
