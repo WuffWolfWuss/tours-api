@@ -4,7 +4,11 @@ const APIFilters = require('./../utilities/apiFilters');
 
 exports.deleteOne = (Model) => {
   return catchAsync(async (req, res, next) => {
-    const result = await Model.findByIdAndDelete(req.params.id);
+    const user = req.user;
+    const result =
+      user.role === 'admin'
+        ? await Model.findByIdAndDelete(req.params.id)
+        : await Model.deleteOne({ _id: req.params.id, user: user.id });
     //const result = await Tour.deleteOne({ _id: req.params.id });
 
     if (!result) {
@@ -24,6 +28,9 @@ exports.updateOne = (Model) =>
       return next(new appError('This route not support password update.', 400));
     }
 
+    //todo: check if current user id match with the id of the user document
+    //user not have permisssion to update other users document
+    //admin have permission to update all.
     const result = await Model.findByIdAndUpdate(req.params.id, req.body, {
       new: true, //return new document
       runValidators: true,

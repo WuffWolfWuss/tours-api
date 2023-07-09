@@ -1,6 +1,7 @@
 const express = require('express');
-const authController = require('./../users/auth.controller');
-const reviewRouter = require('./../reviews/reviews.router');
+const authController = require('../users/auth.controller');
+const reviewRouter = require('../reviews/reviews.router');
+const bookingRouter = require('../booking/booking.router');
 
 const toursRouter = express.Router();
 
@@ -17,6 +18,7 @@ const {
 
 //nested route
 toursRouter.use('/:tourId/reviews', reviewRouter);
+toursRouter.use('/:tourId/booking', bookingRouter);
 
 //toursRouter.param('id', checkId);
 toursRouter.route('/best-tours').get(topTours, getAllTours);
